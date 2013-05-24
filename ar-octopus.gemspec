@@ -27,7 +27,6 @@ Gem::Specification.new do |s|
       s.add_development_dependency(%q<mysql>, ["= 2.8.1"])
       s.add_development_dependency(%q<pg>, [">= 0.11.0"])
       s.add_development_dependency(%q<sqlite3>, [">= 1.3.4"])
-      s.add_development_dependency(%q<pry>, [">= 0"])
       s.add_development_dependency(%q<appraisal>, [">= 0.3.8"])
     else
       s.add_dependency(%q<activerecord>, [">= 2.3.0"])
@@ -37,7 +36,6 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<mysql>, ["= 2.8.1"])
       s.add_dependency(%q<pg>, [">= 0.11.0"])
       s.add_dependency(%q<sqlite3>, [">= 1.3.4"])
-      s.add_dependency(%q<pry>, [">= 0"])
       s.add_dependency(%q<appraisal>, [">= 0.3.8"])
     end
   else
@@ -48,7 +46,6 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<mysql>, ["= 2.8.1"])
     s.add_dependency(%q<pg>, [">= 0.11.0"])
     s.add_dependency(%q<sqlite3>, [">= 1.3.4"])
-    s.add_dependency(%q<pry>, [">= 0"])
     s.add_dependency(%q<appraisal>, [">= 0.3.8"])
   end
 end

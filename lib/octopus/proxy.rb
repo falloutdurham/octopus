@@ -1,5 +1,4 @@
 require "set"
-require 'pry'
 class Octopus::Proxy
   attr_accessor :config
   attr_reader :query_cache, :query_cache_enabled
@@ -16,7 +15,6 @@ class Octopus::Proxy
     @adapters = Set.new
     @shards[:master] = ActiveRecord::Base.connection_pool_without_octopus()
     @config = ActiveRecord::Base.connection_pool_without_octopus.connection.instance_variable_get(:@config)
-    #binding.pry
     if !config.nil? && config.has_key?("verify_connection")
       @verify_connection = config["verify_connection"]
     else
@@ -210,16 +208,13 @@ class Octopus::Proxy
     clear_query_cache_if_needed(method)
 
     if should_clean_connection?(method)
-      #binding.pry
       conn = select_connection()
       self.last_current_shard = self.current_shard
       clean_proxy()
       conn.send(method, *args, &block)
     elsif should_send_queries_to_replicated_databases?(method)
-      #binding.pry
       send_queries_to_selected_slave(method, *args, &block)
     else
-      #binding.pry
       select_connection().send(method, *args, &block)
     end
   end
