@@ -1,12 +1,13 @@
 require "set"
+
 class Octopus::Proxy
   attr_accessor :config
   attr_reader :query_cache, :query_cache_enabled
 
   def initialize(config = Octopus.config)
+    @query_cache = {}
     initialize_shards(config)
     initialize_replication(config) if !config.nil? && config["replicated"]
-    
   end
 
   def initialize_shards(config)
@@ -14,6 +15,7 @@ class Octopus::Proxy
     @groups = {}
     @adapters = Set.new
     @shards[:master] = ActiveRecord::Base.connection_pool_without_octopus()
+    @shards[:master].connection().instance_variable_set(:@query_cache, @query_cache)
     @config = ActiveRecord::Base.connection_pool_without_octopus.connection.instance_variable_get(:@config)
     if !config.nil? && config.has_key?("verify_connection")
       @verify_connection = config["verify_connection"]
@@ -37,6 +39,7 @@ class Octopus::Proxy
         value.merge!(:octopus_shard => key)
         initialize_adapter(value['adapter'])
         @shards[key.to_sym] = connection_pool_for(value, "#{value['adapter']}_connection")
+        @shards[key.to_sym].connection().instance_variable_set(:@query_cache, @query_cache)
       elsif value.is_a?(Hash)
         @groups[key.to_s] = []
 
@@ -47,6 +50,7 @@ class Octopus::Proxy
           config_with_octopus_shard = v.merge(:octopus_shard => k)
 
           @shards[k.to_sym] = connection_pool_for(config_with_octopus_shard, "#{v['adapter']}_connection")
+          @shards[k.to_sym].connection().instance_variable_set(:@query_cache, @query_cache)
           @groups[key.to_s] << k.to_sym
         end
       end
@@ -207,8 +211,12 @@ class Octopus::Proxy
   def method_missing(method, *args, &block)
     clear_query_cache_if_needed(method)
 
+    #Rails.logger.info("---%%%--- Octopus - #{method}")
+
     if should_clean_connection?(method)
       conn = select_connection()
+      conn.instance_variable_set(:@query_cache_enabled, true)
+      conn.instance_variable_set(:@query_cache, {})
       self.last_current_shard = self.current_shard
       clean_proxy()
       conn.send(method, *args, &block)
@@ -219,19 +227,6 @@ class Octopus::Proxy
     end
   end
 
-  def cache
-    @query_cache ||= {}
-   
-    @shards.each do |k,v|
-      v.connection().instance_variable_set(:@query_cache_enabled, true)
-      query_cache = v.connection().instance_variable_get(:@query_cache) || {}
-      v.connection().instance_variable_set(:@query_cache, query_cache)
-    end
-    yield
-  ensure
-      clear_query_cache()
-  end
-
   def clear_query_cache_if_needed(method)
     if [:update, :insert, :delete, :exec_insert, :exec_update, :exec_delete].include?(method)
       clear_query_cache()
@@ -240,7 +235,7 @@ class Octopus::Proxy
 
   def clear_query_cache
     @shards.each do |k,v|
-      v.connection().clear_query_cache()
+      v.connection().clear_query_cache()   
     end
   end
 
@@ -295,6 +290,8 @@ class Octopus::Proxy
     end
   end
 
+  
 
+  
 
 end
